@@ -6,6 +6,7 @@ FRAMERATE = 30
 # Color RGB values
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+BLUE = (0, 0, 255)
 
 
 class Snake(pygame.sprite.Group):
@@ -51,6 +52,9 @@ class Snake(pygame.sprite.Group):
     def head(self):
         return self.snake_segments[0]
 
+    def tail(self):
+        return self.snake_segments[1:]
+
     def on_horizontal(self):
         return self.y_vel == 0
 
@@ -83,6 +87,16 @@ class Snake(pygame.sprite.Group):
         y = self.head().y + self.y_vel
         self.add_segment(x, y, 0)
 
+    def collides(self, sprite1):
+        # Only head will be colliding with other sprite
+        return self.head().check_collision(sprite1)
+
+    def collides_any(self, group):
+        for sprite in group:
+            if self.collides(sprite):
+                return True
+        return False
+
 
 class SnakeSegment(pygame.sprite.Sprite):
 
@@ -95,10 +109,31 @@ class SnakeSegment(pygame.sprite.Sprite):
         self.image = pygame.Surface([width, height])
         self.image.fill(WHITE)
 
-        # Make our top-left corner the passed-in location.
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
+
+    def check_collision(self, sprite1):
+        return pygame.sprite.collide_rect(self, sprite1)
+
+
+class Wall(pygame.sprite.Sprite):
+
+    def __init__(self, color, startpoint, endpoint, thickness):
+        super().__init__()
+        width = abs(endpoint[0]-startpoint[0])
+        height = abs(endpoint[1]-startpoint[1])
+        if width == 0:
+            width = thickness
+        if height == 0:
+            height = thickness
+
+        self.image = pygame.Surface([width, height])
+        self.image.fill(color)
+
+        self.rect = self.image.get_rect()
+        self.rect.x = startpoint[0]
+        self.rect.y = startpoint[1]
 
 
 class App:
@@ -116,7 +151,19 @@ class App:
         # Puts snake starting point at middle of screen
         start_x = self.screen_width/2
         start_y = self.screen_height/2
-        self.snake = Snake(start_x, start_y)  
+        self.snake = Snake(start_x, start_y, 3)  
+
+        # Build walls
+        wall_thickness = 5
+        wall_color = BLUE
+        wall_list = [
+            Wall(wall_color, (0,0), (self.screen_width, 0), wall_thickness),
+            Wall(wall_color, (self.screen_width-wall_thickness, 0), (self.screen_width-wall_thickness, self.screen_height), wall_thickness),
+            Wall(wall_color, (0, self.screen_height-wall_thickness), (self.screen_width-wall_thickness, self.screen_height-wall_thickness), wall_thickness),
+            Wall(wall_color, (0,0), (0,self.screen_height), wall_thickness)
+        ]
+        self.walls = pygame.sprite.Group()
+        self.walls.add(wall_list)
 
     def run(self):
         while self.running:
@@ -124,7 +171,7 @@ class App:
                 if event.type == pygame.QUIT:
                     self.quit()
                 if event.type == pygame.KEYDOWN:
-                    # Only allow lfet or right movement when snake is moving 
+                    # Only allow left or right movement when snake is moving 
                     # in vertical direction
                     if self.snake.on_vertical():
                         if event.key == pygame.K_LEFT:
@@ -143,10 +190,13 @@ class App:
             self.screen.fill(BLACK)
 
             # Update
-            self.snake.move()
+            self.snake.move() 
+            self.walls.draw(self.screen)
             self.snake.draw(self.screen)
-
             pygame.display.update()
+
+            if self.snake.collides_any(self.walls) or self.snake.collides_any(self.snake.tail()):
+                self.quit()
             self.clock.tick(FRAMERATE)
 
 
