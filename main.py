@@ -1,12 +1,21 @@
 import pygame
+import random
 
 # Constants
-FRAMERATE = 30
+FRAMERATE = 20
 
 # Color RGB values
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 BLUE = (0, 0, 255)
+GREEN = (0, 255, 0)
+
+# Size of each snake segments
+SEGMENT_WIDTH = 20
+SEGMENT_HEIGHT = 20
+SEGMENT_MARGIN = 5
+
+WALL_THICKNESS = 25
 
 
 class Snake(pygame.sprite.Group):
@@ -17,9 +26,10 @@ class Snake(pygame.sprite.Group):
         self.start_y = start_y
         self.length = length
         self.snake_segments = []
-        self.segment_width=15
-        self.segment_height=15
-        self.segment_margin=3
+        self.segment_width = SEGMENT_WIDTH
+        self.segment_height = SEGMENT_HEIGHT
+        self.segment_margin = SEGMENT_MARGIN
+        self.last_removed = None
 
         # Segment width and height are equal
         # Hence, size of segment in both dimension
@@ -46,6 +56,7 @@ class Snake(pygame.sprite.Group):
 
     def pop(self):
         last_segment = self.snake_segments.pop()
+        self.last_removed = last_segment
         self.remove(last_segment)
         self.length -= 1
 
@@ -97,6 +108,9 @@ class Snake(pygame.sprite.Group):
                 return True
         return False
 
+    def grow(self):
+        self.add_segment(self.last_removed.rect.x, self.last_removed.rect.y)
+
 
 class SnakeSegment(pygame.sprite.Sprite):
 
@@ -136,6 +150,32 @@ class Wall(pygame.sprite.Sprite):
         self.rect.y = startpoint[1]
 
 
+class Food(pygame.sprite.Sprite):
+
+    def __init__(self, x_bound, y_bound):
+        super().__init__()
+
+        # Uses same size as snake segment
+        self.image = pygame.Surface([SEGMENT_WIDTH, SEGMENT_HEIGHT])
+        self.image.fill(GREEN)
+
+        self.rect = self.image.get_rect()
+        self.x_bound = x_bound
+        self.y_bound = y_bound
+
+    def spawn(self):
+        # Scale the bounds to segment size
+        segmentx_size = SEGMENT_WIDTH + SEGMENT_MARGIN
+        segmenty_size = SEGMENT_HEIGHT + SEGMENT_MARGIN
+        randx = random.randint(self.x_bound[0] // segmentx_size, self.x_bound[1] // segmentx_size - 1)
+        randy = random.randint(self.y_bound[0] // segmenty_size, self.y_bound[1] // segmenty_size - 1)
+        self.rect.x = (randx - 1) * segmentx_size + SEGMENT_MARGIN + WALL_THICKNESS
+        self.rect.y = (randy - 1) * segmenty_size + SEGMENT_MARGIN + WALL_THICKNESS
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)
+
+
 class App:
 
     def __init__(self, width=800, height=600):  
@@ -148,22 +188,25 @@ class App:
         self.clock = pygame.time.Clock()
         self.running = True
 
-        # Puts snake starting point at middle of screen
-        start_x = self.screen_width/2
-        start_y = self.screen_height/2
-        self.snake = Snake(start_x, start_y, 3)  
-
         # Build walls
-        wall_thickness = 5
         wall_color = BLUE
         wall_list = [
-            Wall(wall_color, (0,0), (self.screen_width, 0), wall_thickness),
-            Wall(wall_color, (self.screen_width-wall_thickness, 0), (self.screen_width-wall_thickness, self.screen_height), wall_thickness),
-            Wall(wall_color, (0, self.screen_height-wall_thickness), (self.screen_width-wall_thickness, self.screen_height-wall_thickness), wall_thickness),
-            Wall(wall_color, (0,0), (0,self.screen_height), wall_thickness)
+            Wall(wall_color, (0,0), (self.screen_width, 0), WALL_THICKNESS),
+            Wall(wall_color, (self.screen_width-WALL_THICKNESS, 0), (self.screen_width-WALL_THICKNESS, self.screen_height), WALL_THICKNESS),
+            Wall(wall_color, (0, self.screen_height-WALL_THICKNESS), (self.screen_width-WALL_THICKNESS, self.screen_height-WALL_THICKNESS), WALL_THICKNESS),
+            Wall(wall_color, (0,0), (0,self.screen_height), WALL_THICKNESS)
         ]
         self.walls = pygame.sprite.Group()
         self.walls.add(wall_list)
+
+        # Build food
+        self.food = Food((WALL_THICKNESS, self.screen_width-WALL_THICKNESS), (WALL_THICKNESS, self.screen_height-WALL_THICKNESS))
+        self.food.spawn()
+
+        # Puts snake starting point at top left of screen
+        self.snake = Snake(WALL_THICKNESS+SEGMENT_MARGIN, WALL_THICKNESS+SEGMENT_MARGIN)
+
+        self.score = 0
 
     def run(self):
         while self.running:
@@ -192,13 +235,19 @@ class App:
             # Update
             self.snake.move() 
             self.walls.draw(self.screen)
+            self.food.draw(self.screen)
             self.snake.draw(self.screen)
-            pygame.display.update()
-
+            
             if self.snake.collides_any(self.walls) or self.snake.collides_any(self.snake.tail()):
                 self.quit()
-            self.clock.tick(FRAMERATE)
 
+            if self.snake.collides(self.food):
+                self.score += 1
+                self.snake.grow()
+                self.food.spawn()
+
+            pygame.display.update()
+            self.clock.tick(FRAMERATE)
 
     def quit(self):
         self.running = False
