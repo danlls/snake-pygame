@@ -9,6 +9,7 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
+RED = (255, 0, 0)
 
 # Size of each snake segments
 SEGMENT_WIDTH = 20
@@ -180,34 +181,55 @@ class App:
 
     def __init__(self, width=800, height=600):  
         pygame.init()
+        pygame.font.init()
         self.screen_width = width
         self.screen_height = height
         self.screen = pygame.display.set_mode([self.screen_width, self.screen_height])
         pygame.display.set_caption('Snake')
+        self.font = pygame.font.Font(None, 100)
 
         self.clock = pygame.time.Clock()
         self.running = True
+        self.score = 0
+
+        # Scoreboard
+        self.score_board = pygame.Surface((self.screen_width, 100))
+        self.score_text = self.font.render("Score: " + str(self.score), True, RED)
+        self.score_text_pos = self.score_text.get_rect()
+        self.score_text_pos.centerx = self.score_board.get_rect().centerx
+        self.score_text_pos.centery = self.score_board.get_rect().centery
+
+        # Spaces belongs to game
+        self.game_bound = {
+            'min_x': 0,
+            'max_x': self.screen_width,
+            'min_y': 100,
+            'max_y': self.screen_height,
+        }
 
         # Build walls
         wall_color = BLUE
         wall_list = [
-            Wall(wall_color, (0,0), (self.screen_width, 0), WALL_THICKNESS),
-            Wall(wall_color, (self.screen_width-WALL_THICKNESS, 0), (self.screen_width-WALL_THICKNESS, self.screen_height), WALL_THICKNESS),
-            Wall(wall_color, (0, self.screen_height-WALL_THICKNESS), (self.screen_width-WALL_THICKNESS, self.screen_height-WALL_THICKNESS), WALL_THICKNESS),
-            Wall(wall_color, (0,0), (0,self.screen_height), WALL_THICKNESS)
+            Wall(wall_color, (self.game_bound['min_x'],self.game_bound['min_y']),
+                            (self.game_bound['max_x'], self.game_bound['min_y']), WALL_THICKNESS),
+            Wall(wall_color, (self.game_bound['max_x']-WALL_THICKNESS, self.game_bound['min_y']),
+                            (self.game_bound['max_x']-WALL_THICKNESS, self.game_bound['max_y']), WALL_THICKNESS),
+            Wall(wall_color, (self.game_bound['min_x'], self.game_bound['max_y']-WALL_THICKNESS),
+                            (self.game_bound['max_x']-WALL_THICKNESS, self.game_bound['max_y']-WALL_THICKNESS), WALL_THICKNESS),
+            Wall(wall_color, (self.game_bound['min_x'],self.game_bound['min_y']),
+                            (self.game_bound['min_x'],self.game_bound['max_y']), WALL_THICKNESS)
         ]
         self.walls = pygame.sprite.Group()
         self.walls.add(wall_list)
 
         # Build food
-        self.food = Food((WALL_THICKNESS, self.screen_width-WALL_THICKNESS), (WALL_THICKNESS, self.screen_height-WALL_THICKNESS))
+        self.food = Food((self.game_bound['min_x'] + WALL_THICKNESS, self.game_bound['max_x']-WALL_THICKNESS),
+                        (self.game_bound['min_y'] + WALL_THICKNESS, self.game_bound['max_y']-WALL_THICKNESS))
         self.food.spawn()
 
         # Puts snake starting point at top left of screen
-        self.snake = Snake(WALL_THICKNESS+SEGMENT_MARGIN, WALL_THICKNESS+SEGMENT_MARGIN)
-
-        self.score = 0
-
+        self.snake = Snake(self.game_bound['min_x']+WALL_THICKNESS+SEGMENT_MARGIN, self.game_bound['min_y']+WALL_THICKNESS+SEGMENT_MARGIN)
+        
     def run(self):
         while self.running:
             for event in pygame.event.get():
@@ -231,21 +253,27 @@ class App:
 
             # Fill background to delete previous drawn sprites
             self.screen.fill(BLACK)
+            self.score_board.fill(BLACK)
 
+            # Get score
+            self.score_text = self.font.render("Score: " + str(self.score), True, RED)
+            
             # Update
             self.snake.move() 
             self.walls.draw(self.screen)
             self.food.draw(self.screen)
             self.snake.draw(self.screen)
+            self.score_board.blit(self.score_text, self.score_text_pos)
             
+            # Collision detection
             if self.snake.collides_any(self.walls) or self.snake.collides_any(self.snake.tail()):
                 self.quit()
-
             if self.snake.collides(self.food):
                 self.score += 1
                 self.snake.grow()
                 self.food.spawn()
 
+            self.screen.blit(self.score_board, (0,0))
             pygame.display.update()
             self.clock.tick(FRAMERATE)
 
