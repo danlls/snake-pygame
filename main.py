@@ -10,6 +10,8 @@ WHITE = (255, 255, 255)
 BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
+DARK_GREEN = (0, 200, 0)
+DARK_RED = (200, 0, 0)
 
 # Size of each snake segments
 SEGMENT_WIDTH = 20
@@ -189,8 +191,11 @@ class App:
         self.font = pygame.font.Font(None, 100)
 
         self.clock = pygame.time.Clock()
-        self.running = True
+        
+        
+    def game_init(self):
         self.score = 0
+        self.running = True
 
         # Scoreboard
         self.score_board = pygame.Surface((self.screen_width, 100))
@@ -229,8 +234,10 @@ class App:
 
         # Puts snake starting point at top left of screen
         self.snake = Snake(self.game_bound['min_x']+WALL_THICKNESS+SEGMENT_MARGIN, self.game_bound['min_y']+WALL_THICKNESS+SEGMENT_MARGIN)
-        
+    
+
     def run(self):
+        self.game_init()
         while self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -267,7 +274,8 @@ class App:
             
             # Collision detection
             if self.snake.collides_any(self.walls) or self.snake.collides_any(self.snake.tail()):
-                self.quit()
+                self.running = False
+                self.game_end()
             if self.snake.collides(self.food):
                 self.score += 1
                 self.snake.grow()
@@ -277,8 +285,59 @@ class App:
             pygame.display.update()
             self.clock.tick(FRAMERATE)
 
+    def game_end(self):
+        end = True
+        while end:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.quit()
+
+            self.screen.fill(WHITE)
+
+            # Draw endgame text
+            self.endgame_text = self.font.render("Game Over! Score is {}".format(self.score), True, BLACK)
+            self.endgame_text_pos = self.endgame_text.get_rect()
+            self.endgame_text_pos.center = ((self.screen_width/2),(self.screen_height/4))
+            self.screen.blit(self.endgame_text, self.endgame_text_pos)
+
+            # Draw buttons
+            button_padx = 50
+            button_pady = 25
+            try_again_text = self.font.render("Try Again", True, BLACK)
+            try_again_pos = try_again_text.get_rect()
+            try_again_pos.center = ((self.endgame_text_pos.centerx), (self.endgame_text_pos.centery+200))
+
+            quit_text = self.font.render("Quit", True, BLACK)
+            quit_pos = quit_text.get_rect()
+            quit_pos.center = ((self.endgame_text_pos.centerx), (self.endgame_text_pos.centery+350))
+
+            try_again_button_rect = try_again_pos.inflate(button_padx, button_pady)
+            quit_button_rect = quit_pos.inflate(button_padx, button_pady)
+
+            mouse_pos = pygame.mouse.get_pos()
+            mouse_click = pygame.mouse.get_pressed()
+
+            # Draw buttons
+            button_color = DARK_GREEN
+            if try_again_button_rect.collidepoint(mouse_pos):
+                button_color = GREEN
+                if mouse_click[0]: self.run()
+            pygame.draw.rect(self.screen, button_color, try_again_button_rect)
+
+            button_color = DARK_RED
+            if quit_button_rect.collidepoint(mouse_pos):
+                button_color = RED
+                if mouse_click[0]: self.quit()
+            pygame.draw.rect(self.screen, button_color, quit_button_rect)
+
+            # Draw text
+            self.screen.blit(try_again_text, try_again_pos)
+            self.screen.blit(quit_text, quit_pos)
+
+            pygame.display.update()
+            self.clock.tick(FRAMERATE)
+
     def quit(self):
-        self.running = False
         pygame.quit()
         quit()
 
