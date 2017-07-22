@@ -20,6 +20,8 @@ SEGMENT_MARGIN = 5
 
 WALL_THICKNESS = 25
 
+SOUND_DIR = 'sound/'
+
 
 class Snake(pygame.sprite.Group):
 
@@ -182,6 +184,7 @@ class Food(pygame.sprite.Sprite):
 class App:
 
     def __init__(self, width=800, height=600):  
+        pygame.mixer.init()
         pygame.init()
         pygame.font.init()
         self.screen_width = width
@@ -189,6 +192,7 @@ class App:
         self.screen = pygame.display.set_mode([self.screen_width, self.screen_height])
         pygame.display.set_caption('Snake')
         self.font = pygame.font.Font(None, 100)
+        self.eat_sound = pygame.mixer.Sound(SOUND_DIR + '8biteat.wav')
 
         self.clock = pygame.time.Clock()
         
@@ -277,6 +281,7 @@ class App:
                 self.running = False
                 self.game_end()
             if self.snake.collides(self.food):
+                self.eat_sound.play()
                 self.score += 1
                 self.snake.grow()
                 self.food.spawn()
