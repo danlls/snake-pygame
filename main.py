@@ -270,11 +270,14 @@ class App:
             self.score_text = self.font.render("Score: " + str(self.score), True, RED)
             
             # Update
-            self.snake.move() 
+            self.snake.move()
             self.walls.draw(self.screen)
             self.food.draw(self.screen)
             self.snake.draw(self.screen)
             self.score_board.blit(self.score_text, self.score_text_pos)
+
+            # Draw head indicator
+            pygame.draw.rect(self.screen, RED, self.snake.head().rect, 3)
             
             # Collision detection
             if self.snake.collides_any(self.walls) or self.snake.collides_any(self.snake.tail()):
