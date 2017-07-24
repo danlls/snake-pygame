@@ -293,6 +293,60 @@ class App:
             pygame.display.update()
             self.clock.tick(FRAMERATE)
 
+    def main_menu(self):
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.quit()
+
+            self.screen.fill(WHITE)
+
+            # Main menu text
+            self.intro_text = self.font.render("Snake", True, BLACK)
+            self.intro_text_pos = self.intro_text.get_rect()
+            self.intro_text_pos.center = ((self.screen_width/2),(self.screen_height/4))
+            self.screen.blit(self.intro_text, self.intro_text_pos)
+
+            # Draw buttons' text
+            button_padx = 50
+            button_pady = 25
+            start_text = self.font.render("Start Game", True, BLACK)
+            start_pos = start_text.get_rect()
+            start_pos.center = ((self.intro_text_pos.centerx), (self.intro_text_pos.centery+200))
+
+            quit_text = self.font.render("Quit", True, BLACK)
+            quit_pos = quit_text.get_rect()
+            quit_pos.center = ((self.intro_text_pos.centerx), (self.intro_text_pos.centery+350))
+
+            # Paddings
+            start_button_rect = start_pos.inflate(button_padx, button_pady)
+            quit_button_rect = quit_pos.inflate(button_padx, button_pady)
+
+            # Get mouse action
+            mouse_pos = pygame.mouse.get_pos()
+            mouse_click = pygame.mouse.get_pressed()
+
+            # Draw buttons and check for hover
+            button_color = DARK_GREEN
+            if start_button_rect.collidepoint(mouse_pos):
+                button_color = GREEN
+                if mouse_click[0]: self.run()
+            pygame.draw.rect(self.screen, button_color, start_button_rect)
+
+            button_color = DARK_RED
+            if quit_button_rect.collidepoint(mouse_pos):
+                button_color = RED
+                if mouse_click[0]: self.quit()
+            pygame.draw.rect(self.screen, button_color, quit_button_rect)
+
+            # Draw text
+            self.screen.blit(start_text, start_pos)
+            self.screen.blit(quit_text, quit_pos)
+
+            pygame.display.update()
+            self.clock.tick(FRAMERATE)
+
+
     def game_end(self):
         end = True
         while end:
@@ -308,7 +362,7 @@ class App:
             self.endgame_text_pos.center = ((self.screen_width/2),(self.screen_height/4))
             self.screen.blit(self.endgame_text, self.endgame_text_pos)
 
-            # Draw buttons
+            # Draw buttons' text
             button_padx = 50
             button_pady = 25
             try_again_text = self.font.render("Try Again", True, BLACK)
@@ -352,4 +406,4 @@ class App:
 
 if __name__ == "__main__":
     snake_app = App()
-    snake_app.run()
+    snake_app.main_menu()
