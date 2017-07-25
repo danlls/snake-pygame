@@ -12,6 +12,7 @@ GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 DARK_GREEN = (0, 200, 0)
 DARK_RED = (200, 0, 0)
+GREY = (211, 211, 211)
 
 # Size of each snake segments
 SEGMENT_WIDTH = 20
@@ -93,14 +94,22 @@ class Snake(pygame.sprite.Group):
         self.x_vel = 0
         self.y_vel = 1 * (self.segment_size)
 
-    def move(self):
+    def move(self, bound):
         # Simulate movement by removing last segment, and adding new segment
         # infront of head based on current velocity
         self.pop()
 
         # New segment 
         x = self.head().x + self.x_vel
+        if x > bound['max_x']:
+            x = bound['min_x'] + SEGMENT_MARGIN
+        elif x < bound['min_x']:
+            x = bound['max_x'] + SEGMENT_MARGIN
         y = self.head().y + self.y_vel
+        if y > bound['max_y']:
+            y = bound['min_y'] + SEGMENT_MARGIN
+        elif y < bound['min_y']:
+            y = bound['max_y'] + SEGMENT_MARGIN
         self.add_segment(x, y, 0)
 
     def collides(self, sprite1):
@@ -194,6 +203,9 @@ class App:
         self.font = pygame.font.Font(None, 100)
         self.eat_sound = pygame.mixer.Sound(SOUND_DIR + '8biteat.wav')
 
+        self.walls_toggle = "On"
+        self.toggle_font = pygame.font.Font(None, 50)
+
         self.clock = pygame.time.Clock()
         
         
@@ -217,19 +229,20 @@ class App:
         }
 
         # Build walls
-        wall_color = BLUE
-        wall_list = [
-            Wall(wall_color, (self.game_bound['min_x'],self.game_bound['min_y']),
-                            (self.game_bound['max_x'], self.game_bound['min_y']), WALL_THICKNESS),
-            Wall(wall_color, (self.game_bound['max_x']-WALL_THICKNESS, self.game_bound['min_y']),
-                            (self.game_bound['max_x']-WALL_THICKNESS, self.game_bound['max_y']), WALL_THICKNESS),
-            Wall(wall_color, (self.game_bound['min_x'], self.game_bound['max_y']-WALL_THICKNESS),
-                            (self.game_bound['max_x']-WALL_THICKNESS, self.game_bound['max_y']-WALL_THICKNESS), WALL_THICKNESS),
-            Wall(wall_color, (self.game_bound['min_x'],self.game_bound['min_y']),
-                            (self.game_bound['min_x'],self.game_bound['max_y']), WALL_THICKNESS)
-        ]
-        self.walls = pygame.sprite.Group()
-        self.walls.add(wall_list)
+        if self.walls_toggle == "On":
+            wall_color = BLUE
+            wall_list = [
+                Wall(wall_color, (self.game_bound['min_x'],self.game_bound['min_y']),
+                                (self.game_bound['max_x'], self.game_bound['min_y']), WALL_THICKNESS),
+                Wall(wall_color, (self.game_bound['max_x']-WALL_THICKNESS, self.game_bound['min_y']),
+                                (self.game_bound['max_x']-WALL_THICKNESS, self.game_bound['max_y']), WALL_THICKNESS),
+                Wall(wall_color, (self.game_bound['min_x'], self.game_bound['max_y']-WALL_THICKNESS),
+                                (self.game_bound['max_x']-WALL_THICKNESS, self.game_bound['max_y']-WALL_THICKNESS), WALL_THICKNESS),
+                Wall(wall_color, (self.game_bound['min_x'],self.game_bound['min_y']),
+                                (self.game_bound['min_x'],self.game_bound['max_y']), WALL_THICKNESS)
+            ]
+            self.walls = pygame.sprite.Group()
+            self.walls.add(wall_list)
 
         # Build food
         self.food = Food((self.game_bound['min_x'] + WALL_THICKNESS, self.game_bound['max_x']-WALL_THICKNESS),
@@ -264,14 +277,16 @@ class App:
 
             # Fill background to delete previous drawn sprites
             self.screen.fill(BLACK)
-            self.score_board.fill(BLACK)
+            self.score_board.fill(GREY)
 
             # Get score
             self.score_text = self.font.render("Score: " + str(self.score), True, RED)
             
             # Update
-            self.snake.move()
-            self.walls.draw(self.screen)
+            self.snake.move(self.game_bound)
+            if self.walls_toggle == "On":
+                self.walls.draw(self.screen)
+
             self.food.draw(self.screen)
             self.snake.draw(self.screen)
             self.score_board.blit(self.score_text, self.score_text_pos)
@@ -280,9 +295,15 @@ class App:
             pygame.draw.rect(self.screen, RED, self.snake.head().rect, 3)
             
             # Collision detection
-            if self.snake.collides_any(self.walls) or self.snake.collides_any(self.snake.tail()):
-                self.running = False
-                self.game_end()
+            if self.walls_toggle == "On":
+                if self.snake.collides_any(self.walls) or self.snake.collides_any(self.snake.tail()):
+                    self.running = False
+                    self.game_end()
+            else:
+                if self.snake.collides_any(self.snake.tail()):
+                    self.running = False
+                    self.game_end()
+
             if self.snake.collides(self.food):
                 self.eat_sound.play()
                 self.score += 1
@@ -318,9 +339,14 @@ class App:
             quit_pos = quit_text.get_rect()
             quit_pos.center = ((self.intro_text_pos.centerx), (self.intro_text_pos.centery+350))
 
+            walls_toggle_text = self.toggle_font.render("Walls: {}".format(self.walls_toggle), True, BLACK)
+            walls_toggle_pos = walls_toggle_text.get_rect()
+            walls_toggle_pos.center = ((self.intro_text_pos.centerx), (self.intro_text_pos.centery+100))
+
             # Paddings
             start_button_rect = start_pos.inflate(button_padx, button_pady)
             quit_button_rect = quit_pos.inflate(button_padx, button_pady)
+            walls_toggle_rect = walls_toggle_pos.inflate(button_padx, button_pady)
 
             # Get mouse action
             mouse_pos = pygame.mouse.get_pos()
@@ -339,9 +365,20 @@ class App:
                 if mouse_click[0]: self.quit()
             pygame.draw.rect(self.screen, button_color, quit_button_rect)
 
+            button_color = DARK_GREEN
+            if walls_toggle_rect.collidepoint(mouse_pos):
+                button_color = GREEN
+                if mouse_click[0]:
+                    if self.walls_toggle == "On":
+                        self.walls_toggle = "Off"
+                    else:
+                        self.walls_toggle = "On"
+            pygame.draw.rect(self.screen, button_color, walls_toggle_rect)
+
             # Draw text
             self.screen.blit(start_text, start_pos)
             self.screen.blit(quit_text, quit_pos)
+            self.screen.blit(walls_toggle_text, walls_toggle_pos)
 
             pygame.display.update()
             self.clock.tick(FRAMERATE)
