@@ -4,6 +4,12 @@ import random
 # Constants
 FRAMERATE = 20
 
+SEGMENT_WIDTH = 20
+SEGMENT_HEIGHT = 20
+SEGMENT_MARGIN = 5
+
+WALL_THICKNESS = 25
+
 # Color RGB values
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -13,13 +19,6 @@ RED = (255, 0, 0)
 DARK_GREEN = (0, 200, 0)
 DARK_RED = (200, 0, 0)
 GREY = (211, 211, 211)
-
-# Size of each snake segments
-SEGMENT_WIDTH = 20
-SEGMENT_HEIGHT = 20
-SEGMENT_MARGIN = 5
-
-WALL_THICKNESS = 25
 
 SOUND_DIR = 'sound/'
 
@@ -201,6 +200,7 @@ class App:
         self.screen = pygame.display.set_mode([self.screen_width, self.screen_height])
         pygame.display.set_caption('Snake')
         self.font = pygame.font.Font(None, 100)
+        self.small_font = pygame.font.Font(None, 50)
         self.eat_sound = pygame.mixer.Sound(SOUND_DIR + '8biteat.wav')
 
         self.walls_toggle = "On"
@@ -262,6 +262,8 @@ class App:
                 if event.type == pygame.KEYDOWN:
                     # Only allow left or right movement when snake is moving 
                     # in vertical direction
+                    if event.key == pygame.K_ESCAPE:
+                        self.on_pause()
                     if self.snake.on_vertical():
                         if event.key == pygame.K_LEFT:
                             self.snake.go_left()
@@ -393,7 +395,7 @@ class App:
 
             self.screen.fill(WHITE)
 
-            # Draw endgame text
+            # Prepare text
             self.endgame_text = self.font.render("Game Over! Score is {}".format(self.score), True, BLACK)
             self.endgame_text_pos = self.endgame_text.get_rect()
             self.endgame_text_pos.center = ((self.screen_width/2),(self.screen_height/4))
@@ -432,6 +434,31 @@ class App:
             # Draw text
             self.screen.blit(try_again_text, try_again_pos)
             self.screen.blit(quit_text, quit_pos)
+
+            pygame.display.update()
+            self.clock.tick(FRAMERATE)
+
+    def on_pause(self):
+        paused = True
+        while paused:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.quit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        paused = False
+            self.screen.fill(GREY)
+
+            # Prepare paused text
+            self.paused_text = self.font.render("Paused!", True, BLACK)
+            self.paused_text_pos = self.paused_text.get_rect()
+            self.paused_text_pos.center = ((self.screen_width/2),(self.screen_height/4))
+            self.screen.blit(self.paused_text, self.paused_text_pos)
+
+            instruction_text = self.small_font.render("pressed esc again to resume", True, BLACK)
+            instruction_text_pos = instruction_text.get_rect()
+            instruction_text_pos.center = ((self.screen_width/2),(self.screen_height/4+100))
+            self.screen.blit(instruction_text, instruction_text_pos)
 
             pygame.display.update()
             self.clock.tick(FRAMERATE)
