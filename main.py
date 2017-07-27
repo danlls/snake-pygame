@@ -1,5 +1,6 @@
 import pygame
 import random
+from buttons import Button, ToggleButton
 
 # Constants
 FRAMERATE = 20
@@ -203,7 +204,7 @@ class App:
         self.small_font = pygame.font.Font(None, 50)
         self.eat_sound = pygame.mixer.Sound(SOUND_DIR + '8biteat.wav')
 
-        self.walls_toggle = "On"
+        self.walls_toggle = True
         self.toggle_font = pygame.font.Font(None, 50)
 
         self.clock = pygame.time.Clock()
@@ -229,7 +230,7 @@ class App:
         }
 
         # Build walls
-        if self.walls_toggle == "On":
+        if self.walls_toggle:
             wall_color = BLUE
             wall_list = [
                 Wall(wall_color, (self.game_bound['min_x'],self.game_bound['min_y']),
@@ -286,7 +287,7 @@ class App:
             
             # Update
             self.snake.move(self.game_bound)
-            if self.walls_toggle == "On":
+            if self.walls_toggle:
                 self.walls.draw(self.screen)
 
             self.food.draw(self.screen)
@@ -297,7 +298,7 @@ class App:
             pygame.draw.rect(self.screen, RED, self.snake.head().rect, 3)
             
             # Collision detection
-            if self.walls_toggle == "On":
+            if self.walls_toggle:
                 if self.snake.collides_any(self.walls) or self.snake.collides_any(self.snake.tail()):
                     self.running = False
                     self.game_end()
@@ -317,6 +318,37 @@ class App:
             self.clock.tick(FRAMERATE)
 
     def main_menu(self):
+        # Create text
+        self.intro_text = self.font.render("Snake", True, BLACK)
+        self.intro_text_pos = self.intro_text.get_rect()
+        self.intro_text_pos.center = ((self.screen_width/2),(self.screen_height/4))
+
+        button_padx = 50
+        button_pady = 25
+
+        # Create buttons
+        start_button = Button(
+            self.screen, self.font, "Start Game",
+            BLACK, DARK_GREEN, self.intro_text_pos.centerx,
+            self.intro_text_pos.centery+200
+        )
+        start_button.add_paddings(button_padx, button_pady)
+
+        quit_button = Button(
+            self.screen, self.font, "Quit",
+            BLACK, DARK_RED, self.intro_text_pos.centerx,
+            self.intro_text_pos.centery+350
+        )
+        quit_button.add_paddings(button_padx, button_pady)
+
+        walls_toggle_button = ToggleButton(
+            self.walls_toggle, self.screen, self.toggle_font, "Walls: On",
+            BLACK, DARK_GREEN, self.intro_text_pos.centerx,
+            self.intro_text_pos.centery+100
+        )
+        walls_toggle_button.add_paddings(button_padx, button_pady)
+        walls_toggle_button.set_toggle_text("Walls: On", "Walls: Off")
+
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -324,116 +356,73 @@ class App:
 
             self.screen.fill(WHITE)
 
-            # Main menu text
-            self.intro_text = self.font.render("Snake", True, BLACK)
-            self.intro_text_pos = self.intro_text.get_rect()
-            self.intro_text_pos.center = ((self.screen_width/2),(self.screen_height/4))
-            self.screen.blit(self.intro_text, self.intro_text_pos)
-
-            # Draw buttons' text
-            button_padx = 50
-            button_pady = 25
-            start_text = self.font.render("Start Game", True, BLACK)
-            start_pos = start_text.get_rect()
-            start_pos.center = ((self.intro_text_pos.centerx), (self.intro_text_pos.centery+200))
-
-            quit_text = self.font.render("Quit", True, BLACK)
-            quit_pos = quit_text.get_rect()
-            quit_pos.center = ((self.intro_text_pos.centerx), (self.intro_text_pos.centery+350))
-
-            walls_toggle_text = self.toggle_font.render("Walls: {}".format(self.walls_toggle), True, BLACK)
-            walls_toggle_pos = walls_toggle_text.get_rect()
-            walls_toggle_pos.center = ((self.intro_text_pos.centerx), (self.intro_text_pos.centery+100))
-
-            # Paddings
-            start_button_rect = start_pos.inflate(button_padx, button_pady)
-            quit_button_rect = quit_pos.inflate(button_padx, button_pady)
-            walls_toggle_rect = walls_toggle_pos.inflate(button_padx, button_pady)
-
             # Get mouse action
             mouse_pos = pygame.mouse.get_pos()
             mouse_click = pygame.mouse.get_pressed()
 
-            # Draw buttons and check for hover
-            button_color = DARK_GREEN
-            if start_button_rect.collidepoint(mouse_pos):
-                button_color = GREEN
-                if mouse_click[0]: self.run()
-            pygame.draw.rect(self.screen, button_color, start_button_rect)
+            start_button.mouse_handler(mouse_pos, [mouse_click[0]], True, GREEN, self.run)
+            quit_button.mouse_handler(mouse_pos, [mouse_click[0]], True, RED, self.quit)
 
-            button_color = DARK_RED
-            if quit_button_rect.collidepoint(mouse_pos):
-                button_color = RED
-                if mouse_click[0]: self.quit()
-            pygame.draw.rect(self.screen, button_color, quit_button_rect)
-
-            button_color = DARK_GREEN
-            if walls_toggle_rect.collidepoint(mouse_pos):
-                button_color = GREEN
-                if mouse_click[0]:
-                    if self.walls_toggle == "On":
-                        self.walls_toggle = "Off"
-                    else:
-                        self.walls_toggle = "On"
-            pygame.draw.rect(self.screen, button_color, walls_toggle_rect)
+            def walls_switch():
+                self.walls_toggle = not self.walls_toggle
+            walls_toggle_button.mouse_handler(mouse_pos, [mouse_click[0]], True, GREEN, walls_switch)
 
             # Draw text
-            self.screen.blit(start_text, start_pos)
-            self.screen.blit(quit_text, quit_pos)
-            self.screen.blit(walls_toggle_text, walls_toggle_pos)
+            self.screen.blit(self.intro_text, self.intro_text_pos)
+
+            # Draw buttons
+            start_button.draw()
+            quit_button.draw()
+            walls_toggle_button.draw()
 
             pygame.display.update()
             self.clock.tick(FRAMERATE)
 
 
     def game_end(self):
+        # Create text
+        self.endgame_text = self.font.render("Game Over! Score is {}".format(self.score), True, BLACK)
+        self.endgame_text_pos = self.endgame_text.get_rect()
+        self.endgame_text_pos.center = ((self.screen_width/2),(self.screen_height/4))
+
+        button_padx = 50
+        button_pady = 25
+
+        # Create buttons
+        try_again_button = Button(
+            self.screen, self.font, "Try Again",
+            BLACK, DARK_GREEN, self.endgame_text_pos.centerx,
+            self.endgame_text_pos.centery+200
+        )
+        try_again_button.add_paddings(button_padx, button_pady)
+
+        quit_button = Button(
+            self.screen, self.font, "Quit",
+            BLACK, DARK_RED, self.endgame_text_pos.centerx,
+            self.endgame_text_pos.centery+350
+        )
+        quit_button.add_paddings(button_padx, button_pady)
+        
         end = True
         while end:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.quit()
 
-            self.screen.fill(WHITE)
-
-            # Prepare text
-            self.endgame_text = self.font.render("Game Over! Score is {}".format(self.score), True, BLACK)
-            self.endgame_text_pos = self.endgame_text.get_rect()
-            self.endgame_text_pos.center = ((self.screen_width/2),(self.screen_height/4))
-            self.screen.blit(self.endgame_text, self.endgame_text_pos)
-
-            # Draw buttons' text
-            button_padx = 50
-            button_pady = 25
-            try_again_text = self.font.render("Try Again", True, BLACK)
-            try_again_pos = try_again_text.get_rect()
-            try_again_pos.center = ((self.endgame_text_pos.centerx), (self.endgame_text_pos.centery+200))
-
-            quit_text = self.font.render("Quit", True, BLACK)
-            quit_pos = quit_text.get_rect()
-            quit_pos.center = ((self.endgame_text_pos.centerx), (self.endgame_text_pos.centery+350))
-
-            try_again_button_rect = try_again_pos.inflate(button_padx, button_pady)
-            quit_button_rect = quit_pos.inflate(button_padx, button_pady)
+            self.screen.fill(WHITE)         
 
             mouse_pos = pygame.mouse.get_pos()
             mouse_click = pygame.mouse.get_pressed()
 
-            # Draw buttons
-            button_color = DARK_GREEN
-            if try_again_button_rect.collidepoint(mouse_pos):
-                button_color = GREEN
-                if mouse_click[0]: self.run()
-            pygame.draw.rect(self.screen, button_color, try_again_button_rect)
-
-            button_color = DARK_RED
-            if quit_button_rect.collidepoint(mouse_pos):
-                button_color = RED
-                if mouse_click[0]: self.quit()
-            pygame.draw.rect(self.screen, button_color, quit_button_rect)
+            try_again_button.mouse_handler(mouse_pos, [mouse_click[0]], True, GREEN, self.run)
+            quit_button.mouse_handler(mouse_pos, [mouse_click[0]], True, RED, self.quit)
 
             # Draw text
-            self.screen.blit(try_again_text, try_again_pos)
-            self.screen.blit(quit_text, quit_pos)
+            self.screen.blit(self.endgame_text, self.endgame_text_pos)
+
+            # Draw buttons
+            try_again_button.draw()
+            quit_button.draw()
 
             pygame.display.update()
             self.clock.tick(FRAMERATE)
