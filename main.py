@@ -1,5 +1,6 @@
 import pygame
 import random
+import sys
 from buttons import Button, ToggleButton
 
 # Constants
@@ -11,6 +12,9 @@ SEGMENT_MARGIN = 5
 
 WALL_THICKNESS = 25
 
+BUTTON_PADX = 50
+BUTTON_PADY = 25
+
 # Color RGB values
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -18,6 +22,7 @@ BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 DARK_GREEN = (0, 200, 0)
+DARK_BLUE = (0, 0, 200)
 DARK_RED = (200, 0, 0)
 GREY = (211, 211, 211)
 
@@ -201,7 +206,7 @@ class App:
         self.screen_height = height
         self.screen = pygame.display.set_mode([self.screen_width, self.screen_height])
         pygame.display.set_caption('Snake')
-        self.font = pygame.font.Font(DEFAULT_FONT, 80)
+        self.font = pygame.font.Font(DEFAULT_FONT, 60)
         self.small_font = pygame.font.Font(DEFAULT_FONT, 40)
         self.eat_sound = pygame.mixer.Sound(SOUND_DIR + '8biteat.wav')
 
@@ -324,30 +329,27 @@ class App:
         self.intro_text_pos = self.intro_text.get_rect()
         self.intro_text_pos.center = ((self.screen_width/2),(self.screen_height/4))
 
-        button_padx = 50
-        button_pady = 25
-
         # Create buttons
         start_button = Button(
             self.screen, self.font, "Start Game",
             BLACK, DARK_GREEN, self.intro_text_pos.centerx,
             self.intro_text_pos.centery+200
         )
-        start_button.add_paddings(button_padx, button_pady)
+        start_button.add_paddings(BUTTON_PADX, BUTTON_PADY)
 
         quit_button = Button(
             self.screen, self.font, "Quit",
             BLACK, DARK_RED, self.intro_text_pos.centerx,
             self.intro_text_pos.centery+350
         )
-        quit_button.add_paddings(button_padx, button_pady)
+        quit_button.add_paddings(BUTTON_PADX, BUTTON_PADY)
 
         walls_toggle_button = ToggleButton(
             self.walls_toggle, self.screen, self.toggle_font, "Walls: On",
             BLACK, DARK_GREEN, self.intro_text_pos.centerx,
             self.intro_text_pos.centery+100
         )
-        walls_toggle_button.add_paddings(button_padx, button_pady)
+        walls_toggle_button.add_paddings(BUTTON_PADX, BUTTON_PADY)
         walls_toggle_button.set_toggle("Walls: On", GREEN, "Walls: Off", RED)
 
         while True:
@@ -386,23 +388,27 @@ class App:
         self.endgame_text_pos = self.endgame_text.get_rect()
         self.endgame_text_pos.center = ((self.screen_width/2),(self.screen_height/4))
 
-        button_padx = 50
-        button_pady = 25
-
         # Create buttons
         try_again_button = Button(
             self.screen, self.font, "Try Again",
             BLACK, DARK_GREEN, self.endgame_text_pos.centerx,
-            self.endgame_text_pos.centery+200
+            self.endgame_text_pos.centery+150
         )
-        try_again_button.add_paddings(button_padx, button_pady)
+        try_again_button.add_paddings(BUTTON_PADX, BUTTON_PADY)
 
         quit_button = Button(
             self.screen, self.font, "Quit",
             BLACK, DARK_RED, self.endgame_text_pos.centerx,
             self.endgame_text_pos.centery+350
         )
-        quit_button.add_paddings(button_padx, button_pady)
+        quit_button.add_paddings(BUTTON_PADX, BUTTON_PADY)
+
+        back_menu_button = Button(
+            self.screen, self.font, "Back to Main Menu",
+            BLACK, DARK_BLUE, self.endgame_text_pos.centerx,
+            self.endgame_text_pos.centery+250
+        )
+        back_menu_button.add_paddings(BUTTON_PADX, BUTTON_PADY)
         
         end = True
         while end:
@@ -416,6 +422,7 @@ class App:
             mouse_click = pygame.mouse.get_pressed()
 
             try_again_button.mouse_handler(mouse_pos, [mouse_click[0]], True, GREEN, self.run)
+            back_menu_button.mouse_handler(mouse_pos, [mouse_click[0]], True, BLUE, self.main_menu)
             quit_button.mouse_handler(mouse_pos, [mouse_click[0]], True, RED, self.quit)
 
             # Draw text
@@ -423,6 +430,7 @@ class App:
 
             # Draw buttons
             try_again_button.draw()
+            back_menu_button.draw()
             quit_button.draw()
 
             pygame.display.update()
@@ -439,22 +447,39 @@ class App:
                         paused = False
             self.screen.fill(GREY)
 
+
+
             # Prepare paused text
             self.paused_text = self.font.render("Paused!", True, BLACK)
             self.paused_text_pos = self.paused_text.get_rect()
             self.paused_text_pos.center = ((self.screen_width/2),(self.screen_height/4))
             self.screen.blit(self.paused_text, self.paused_text_pos)
 
-            instruction_text = self.small_font.render("pressed esc again to resume", True, BLACK)
+            instruction_text = self.small_font.render("press esc again to resume", True, BLACK)
             instruction_text_pos = instruction_text.get_rect()
             instruction_text_pos.center = ((self.screen_width/2),(self.screen_height/4+100))
             self.screen.blit(instruction_text, instruction_text_pos)
+
+            back_menu_button = Button(
+                self.screen, self.font, "Back to Main Menu",
+                BLACK, DARK_BLUE, instruction_text_pos.centerx,
+                instruction_text_pos.centery+200
+            )
+            back_menu_button.add_paddings(BUTTON_PADX, BUTTON_PADY)
+
+            # Get mouse action
+            mouse_pos = pygame.mouse.get_pos()
+            mouse_click = pygame.mouse.get_pressed()
+            back_menu_button.mouse_handler(mouse_pos, [mouse_click[0]], True, BLUE, self.main_menu)
+
+            back_menu_button.draw()
 
             pygame.display.update()
             self.clock.tick(FRAMERATE)
 
     def quit(self):
         pygame.quit()
+        sys.exit()
 
 
 if __name__ == "__main__":
