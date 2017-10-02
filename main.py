@@ -22,6 +22,7 @@ DARK_RED = (200, 0, 0)
 GREY = (211, 211, 211)
 
 SOUND_DIR = 'sound/'
+DEFAULT_FONT = 'freesansbold.ttf'
 
 
 class Snake(pygame.sprite.Group):
@@ -200,12 +201,12 @@ class App:
         self.screen_height = height
         self.screen = pygame.display.set_mode([self.screen_width, self.screen_height])
         pygame.display.set_caption('Snake')
-        self.font = pygame.font.Font(None, 100)
-        self.small_font = pygame.font.Font(None, 50)
+        self.font = pygame.font.Font(DEFAULT_FONT, 80)
+        self.small_font = pygame.font.Font(DEFAULT_FONT, 40)
         self.eat_sound = pygame.mixer.Sound(SOUND_DIR + '8biteat.wav')
 
         self.walls_toggle = True
-        self.toggle_font = pygame.font.Font(None, 50)
+        self.toggle_font = pygame.font.Font(DEFAULT_FONT, 40)
 
         self.clock = pygame.time.Clock()
         
@@ -454,7 +455,6 @@ class App:
 
     def quit(self):
         pygame.quit()
-        quit()
 
 
 if __name__ == "__main__":
