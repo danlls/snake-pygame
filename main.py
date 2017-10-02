@@ -347,7 +347,7 @@ class App:
             self.intro_text_pos.centery+100
         )
         walls_toggle_button.add_paddings(button_padx, button_pady)
-        walls_toggle_button.set_toggle_text("Walls: On", "Walls: Off")
+        walls_toggle_button.set_toggle("Walls: On", GREEN, "Walls: Off", RED)
 
         while True:
             for event in pygame.event.get():

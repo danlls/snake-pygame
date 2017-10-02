@@ -41,16 +41,20 @@ class ToggleButton(Button):
         self.toggle_text = False
         super().__init__(*args, **kwargs)
 
-    def set_toggle_text(self, true_text, false_text, state=True):
+    def set_toggle(self, true_text, true_color, false_text, false_color, state=True):
         self.toggle_text = state
         self.true_text = true_text
+        self.true_color = true_color
         self.false_text = false_text
+        self.false_color = false_color
 
     def draw(self):
         if self.toggle_text:
             if self.status:
+                self.button_color = self.true_color
                 self.button_text = self.font.render(self.true_text, True, self.text_color)
             else:
+                self.button_color = self.false_color
                 self.button_text = self.font.render(self.false_text, True, self.text_color)
         super().draw()
 
