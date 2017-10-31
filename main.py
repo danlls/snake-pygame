@@ -18,15 +18,14 @@ BUTTON_PADY = 25
 # Color RGB values
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
-BLUE = (0, 0, 255)
+BLUE = (95, 135, 255)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 DARK_GREEN = (0, 200, 0)
-DARK_BLUE = (0, 0, 200)
+DARK_BLUE = (65, 105, 225)
 DARK_RED = (200, 0, 0)
 GREY = (211, 211, 211)
 
-SOUND_DIR = 'sound/'
 DEFAULT_FONT = 'freesansbold.ttf'
 
 
@@ -208,7 +207,7 @@ class App:
         pygame.display.set_caption('Snake')
         self.font = pygame.font.Font(DEFAULT_FONT, 60)
         self.small_font = pygame.font.Font(DEFAULT_FONT, 40)
-        self.eat_sound = pygame.mixer.Sound(SOUND_DIR + '8biteat.wav')
+        self.eat_sound = pygame.mixer.Sound('8biteat.wav')
 
         self.walls_toggle = True
         self.toggle_font = pygame.font.Font(DEFAULT_FONT, 40)
